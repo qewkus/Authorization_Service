@@ -1,13 +1,13 @@
-from rest_framework import status, generics
+from django.contrib.auth import login, logout
+from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.renderers import TemplateHTMLRenderer
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import redirect
 from .serializers import (
     PhoneNumberSerializer,
     VerifyCodeSerializer,
-    CustomUserSerializer,
     ProfileCustomUserSerializer,
     ReferralCodeSerializer,
 )
@@ -57,6 +57,8 @@ class VerifyCodeView(APIView):
 
         try:
             user, tokens = AuthService.authenticate(phone_number, code)
+            if user is not None:
+                login(request, user)
             response = redirect('users:profile')
             response.set_cookie('access', tokens['access'])
             response.set_cookie('refresh', tokens['refresh'])
@@ -126,3 +128,15 @@ class ActivateReferralCodeView(APIView):
                 'serializer': serializer,
                 'error': str(e)
             })
+
+
+class LogoutProfileView(APIView):
+    """Представление для выхода из профиля"""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        logout(request)
+        response = redirect("users:verify-code")
+        response.delete_cookie("access")
+        response.delete_cookie("refresh")
+        return response

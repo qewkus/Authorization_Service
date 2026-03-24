@@ -38,8 +38,9 @@ class SMSService:
             return True
 
         try:
+            phone_number_int = int(phone_number)
             api = SmsAero(SMSAERO_EMAIL, SMSAERO_API_KEY)
-            result = api.send_sms(phone_number, f"Ваш код подтверждения: {code}")
+            result = api.send_sms(phone_number_int, f"Ваш код подтверждения: {code}")
             return bool(result.get('success'))
         except Exception as e:
             print(f"Error sending SMS: {e}")

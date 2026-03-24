@@ -38,17 +38,6 @@ class VerifyCodeSerializer(serializers.Serializer):
         return validate_verification_code(value)
 
 
-class CustomUserSerializer(serializers.ModelSerializer):
-    """Главный сериализатор для модели CustomUser"""
-    class Meta:
-        model = CustomUser
-        fields = ["id", "phone_number", "invite_code", "referral_code",]
-        read_only_fields = ["invite_code",]
-
-    def validate_referral_code(self, value):
-        return validate_referral_code(value, self.instance)
-
-
 class ProfileCustomUserSerializer(serializers.ModelSerializer):
     """Сериализатор для профиля пользователя со списком рефералов"""
     referred_users = serializers.SerializerMethodField()
