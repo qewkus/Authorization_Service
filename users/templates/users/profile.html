@@ -1,0 +1,57 @@
+{% extends 'users/base.html' %}
+
+{% block title %}Профиль{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="text-center">Профиль пользователя</h3>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h5>Номер телефона:</h5>
+                        <p>{{ user.phone_number }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>Ваш инвайт-код:</h5>
+                        <p>{{ user.invite_code }}</p>
+                    </div>
+                </div>
+
+                {% if user.referral_code %}
+                    <div class="mb-4">
+                        <h5>Активированный инвайт-код:</h5>
+                        <p>{{ user.referral_code }}</p>
+                    </div>
+                {% endif %}
+
+                <div class="mb-4">
+                    <h5>Приглашенные пользователи:</h5>
+                    {% with referred_users=user.get_referred_users %}
+                        {% if referred_users %}
+                            <ul class="list-group">
+                                {% for phone in referred_users %}
+                                    <li class="list-group-item">{{ phone }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p>У вас пока нет приглашенных пользователей</p>
+                        {% endif %}
+                    {% endwith %}
+                </div>
+
+                {% if not user.referral_code %}
+                    <div class="text-center">
+                        <a href="{% url 'users:activate-referral' %}" class="btn btn-primary">
+                            Активировать инвайт-код
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

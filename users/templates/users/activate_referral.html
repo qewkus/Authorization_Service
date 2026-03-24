@@ -1,0 +1,36 @@
+{% extends 'users/base.html' %}
+
+{% block title %}Активация инвайт-кода{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="text-center">Активация инвайт-кода</h3>
+            </div>
+            <div class="card-body">
+                {% if error %}
+                    <div class="alert alert-danger">{{ error }}</div>
+                {% endif %}
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        {{ serializer.referral_code.label_tag }}
+                        <input type="text" name="referral_code"
+                               class="form-control {% if serializer.referral_code.errors %}is-invalid{% endif %}"
+                               value="{{ serializer.referral_code.value|default:'' }}"
+                               placeholder="Введите инвайт-код">
+                        {% if serializer.referral_code.errors %}
+                            <div class="invalid-feedback">
+                                {{ serializer.referral_code.errors|join:", " }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Активировать</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

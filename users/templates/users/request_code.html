@@ -1,0 +1,33 @@
+{% extends 'users/base.html' %}
+
+{% block title %}Запрос кода{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="text-center">Введите номер телефона</h3>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        {{ serializer.phone_number.label_tag }}
+                        <input type="tel" name="phone_number"
+                               class="form-control {% if serializer.phone_number.errors %}is-invalid{% endif %}"
+                               value="{{ serializer.phone_number.value|default:'' }}"
+                               placeholder="+7XXXXXXXXXX">
+                        {% if serializer.phone_number.errors %}
+                            <div class="invalid-feedback">
+                                {{ serializer.phone_number.errors|join:", " }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Получить код</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
