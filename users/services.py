@@ -4,7 +4,6 @@ import random
 from typing import Tuple
 from django.conf import settings
 from django.core.cache import cache
-from rest_framework_simplejwt.tokens import RefreshToken
 from .models import CustomUser
 
 
@@ -18,7 +17,7 @@ class SMSService:
     @staticmethod
     def save_code(phone_number: str, code: str) -> None:
         """Сохранение кода в Redis"""
-        cache.set(f"sms_code_{phone_number}", code, timeout=300)  # Кеширую на 5 минут
+        cache.set(f"sms_code_{phone_number}", code, timeout=300)
 
     @staticmethod
     def get_code(phone_number: str) -> str:
@@ -51,15 +50,6 @@ class AuthService:
     """Сервис аутентификации"""
 
     @staticmethod
-    def get_tokens_for_user(user: CustomUser) -> dict:
-        """Получение JWT токенов для пользователя"""
-        refresh = RefreshToken.for_user(user)
-        return {
-            'refresh': str(refresh),
-            'access': str(refresh.access_token),
-        }
-
-    @staticmethod
     def get_or_create_user(phone_number: str) -> Tuple[CustomUser, bool]:
         """Получение или создание пользователя по номеру телефона"""
         return CustomUser.objects.get_or_create(
@@ -70,7 +60,7 @@ class AuthService:
         )
 
     @classmethod
-    def authenticate(cls, phone_number: str, code: str) -> Tuple[CustomUser, dict]:
+    def authenticate(cls, phone_number: str, code: str) -> CustomUser:
         """Аутентификация пользователя по номеру телефона и коду"""
         saved_code = SMSService.get_code(phone_number)
 
@@ -78,11 +68,10 @@ class AuthService:
             raise ValueError("Неверный код подтверждения")
 
         user, created = cls.get_or_create_user(phone_number)
-        tokens = cls.get_tokens_for_user(user)
 
         SMSService.delete_code(phone_number)
 
-        return user, tokens
+        return user
 
 
 class ReferralService:

@@ -32,8 +32,8 @@ class RequestCodeView(APIView):
         phone_number = serializer.validated_data['phone_number']
         try:
             code = SMSService.generate_code()
-            SMSService.save_code(phone_number, code)  # Сохраняю код в Redis
-            SMSService.send_sms(phone_number, code)  # Отправляю SMS с кодом
+            SMSService.save_code(phone_number, code)
+            SMSService.send_sms(phone_number, code)
             request.session['phone_number'] = phone_number
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -69,10 +69,9 @@ class VerifyCodeView(APIView):
 
 
         try:
-            user, tokens = AuthService.authenticate(phone_number, serializer.validated_data['code'])
+            user = AuthService.authenticate(phone_number, serializer.validated_data['code'])
             if user is not None:
                 login(request, user)
-                # Очищаем номер телефона из сессии после успешной аутентификации
                 del request.session['phone_number']
             return redirect("users:profile")
         except ValueError as e:
@@ -83,7 +82,7 @@ class VerifyCodeView(APIView):
 
 
 class ProfileView(generics.RetrieveUpdateAPIView):
-    """Представление для просмотра и обновления профиля"""
+    """Представление для просмотра профиля"""
     permission_classes = [IsAuthenticated]
     renderer_classes = [TemplateHTMLRenderer]
     template_name = 'users/profile.html'
