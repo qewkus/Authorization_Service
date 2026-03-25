@@ -5,6 +5,7 @@ from typing import Tuple
 from django.conf import settings
 from django.core.cache import cache
 from .models import CustomUser
+import time
 
 
 class SMSService:
@@ -32,6 +33,9 @@ class SMSService:
     @staticmethod
     def send_sms(phone_number: str, code: str) -> bool:
         """Отправка SMS через SmsAero"""
+
+        time.sleep(random.uniform(1, 2))
+
         if settings.DEBUG:
             print(f"SMS code for {phone_number}: {code}")
             return True
