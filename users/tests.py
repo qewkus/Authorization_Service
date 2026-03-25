@@ -16,17 +16,47 @@ class RequestCodeViewTest(APITestCase):
 
             self.assertEqual(response.status_code, status.HTTP_302_FOUND)
             self.assertRedirects(response, reverse('users:verify-code'))
+            self.assertEqual(self.client.session['phone_number'], data['phone_number'])
 
 
 class VerifyCodeViewTest(APITestCase):
     def setUp(self):
         self.phone_number = '+79991234567'
         self.code = '1332'
+        session = self.client.session
+        session['phone_number'] = self.phone_number
+        session.save()
         SMSService.save_code(self.phone_number, self.code)
+
+    def test_verify_code_get(self):
+        url = reverse('users:verify-code')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['phone_number'], self.phone_number)
+
+    def test_verify_valid_code(self):
+        url = reverse('users:verify-code')
+        data = {'code': self.code}
+        response = self.client.post(url, data, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_302_FOUND)
+        self.assertRedirects(response, reverse('users:profile'))
+        self.assertNotIn('phone_number', self.client.session)
 
     def test_verify_invalid_code(self):
         url = reverse('users:verify-code')
-        data = {'phone_number': self.phone_number, 'code': '0000'}
+        data = {'code': '0000'}
+        response = self.client.post(url, data, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_verify_out_phone_number_in_session(self):
+        session = self.client.session
+        del session['phone_number']
+        session.save()
+
+        url = reverse('users:verify-code')
+        data = {'code': self.code}
         response = self.client.post(url, data, format='json')
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -34,15 +64,21 @@ class VerifyCodeViewTest(APITestCase):
 
 class ProfileViewTest(APITestCase):
     def setUp(self):
-        self.user = CustomUser.objects.create(phone_number='+79991234567')
+        self.user = CustomUser.objects.create(phone_number='+79991234567', invite_code='ABC123')
+        self.referred_user = CustomUser.objects.create(
+            phone_number='+79997654321',
+            referral_code='ABC123'  # Использует invite_code первого пользователя
+        )
         self.client.force_authenticate(user=self.user)
         self.url = reverse('users:profile')
 
     def test_profile_view_get(self):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        #print(response.data)
-        self.assertEqual(response.data['user']['phone_number'], self.user.phone_number)
+        # Проверяем, что пользователь передан в контекст
+        self.assertEqual(response.data['user'], self.user)
+        # Проверяем список рефералов
+        self.assertIn(self.referred_user, response.data['referred_users'])
 
 
 class ActivateReferralCodeViewTest(APITestCase):
@@ -63,7 +99,8 @@ class ActivateReferralCodeViewTest(APITestCase):
         data = {'referral_code': 'invalid'}
         response = self.client.post(self.url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn('referral_code', response.data)
+        self.assertIn('errors', response.data)
+        self.assertIn('referral_code', response.data['errors'])
         self.user.refresh_from_db()
         self.assertIsNone(self.user.referral_code)
 
@@ -77,7 +114,7 @@ class LogoutProfileViewTest(APITestCase):
     def test_logout(self):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_302_FOUND)
-        self.assertEqual(response.url, reverse("users:verify-code"))
+        self.assertEqual(response.url, reverse("users:request-code"))
         self.assertFalse("_auth_user_id" in self.client.session)
 
     def test_logout_requires_authentication(self):

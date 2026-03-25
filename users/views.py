@@ -12,6 +12,7 @@ from .serializers import (
     ReferralCodeSerializer,
 )
 from .services import SMSService, AuthService, ReferralService
+from users.models import CustomUser
 
 
 class RequestCodeView(APIView):
@@ -33,6 +34,7 @@ class RequestCodeView(APIView):
             code = SMSService.generate_code()
             SMSService.save_code(phone_number, code)  # Сохраняю код в Redis
             SMSService.send_sms(phone_number, code)  # Отправляю SMS с кодом
+            request.session['phone_number'] = phone_number
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -40,26 +42,38 @@ class RequestCodeView(APIView):
 
 
 class VerifyCodeView(APIView):
-    """Представление для проверки кода подтверждения"""
     renderer_classes = [TemplateHTMLRenderer]
     template_name = 'users/verify_code.html'
 
     def get(self, request):
-        serializer = VerifyCodeSerializer()
-        return Response({'serializer': serializer})
+        serializer = VerifyCodeSerializer(initial={'phone_number': request.session.get('phone_number')})
+        return Response({
+            'serializer': serializer,
+            'phone_number': request.session.get('phone_number')
+        })
 
     def post(self, request):
-        serializer = VerifyCodeSerializer(data=request.data)
+        phone_number = request.session.get('phone_number')
+        if not phone_number:
+            return Response({
+                'error': 'Номер телефона не найден',
+                'serializer': VerifyCodeSerializer()
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = VerifyCodeSerializer(data={
+            'phone_number': phone_number,
+            'code': request.data.get('code')
+        })
         if not serializer.is_valid():
             return Response({'serializer': serializer}, status=status.HTTP_400_BAD_REQUEST)
 
-        phone_number = serializer.validated_data['phone_number']
-        code = serializer.validated_data['code']
 
         try:
-            user, tokens = AuthService.authenticate(phone_number, code)
+            user, tokens = AuthService.authenticate(phone_number, serializer.validated_data['code'])
             if user is not None:
                 login(request, user)
+                # Очищаем номер телефона из сессии после успешной аутентификации
+                del request.session['phone_number']
             return redirect("users:profile")
         except ValueError as e:
             return Response({
@@ -79,13 +93,16 @@ class ProfileView(generics.RetrieveUpdateAPIView):
         return self.request.user
 
     def retrieve(self, request, *args, **kwargs):
-        instance = self.get_object()
-        serializer = self.get_serializer(instance)
-        return Response({'user': serializer.data})
+        user = self.get_object()
+        referred_users = CustomUser.objects.filter(referral_code=user.invite_code)
+        return Response({
+            'user': user,
+            'referred_users': referred_users
+        })
 
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
-        serializer = self.get_serializer(self.object, data=request.data, patrial=True)
+        serializer = self.get_serializer(self.object, data=request.data, partial=True)
         if not serializer.is_valid():
             return Response({
                 'user': self.object,
@@ -111,7 +128,10 @@ class ActivateReferralCodeView(APIView):
             context={'user': request.user}
         )
         if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response({
+                'serializer': serializer,
+                'errors': serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             ReferralService.activate_referral_code(
@@ -126,9 +146,10 @@ class ActivateReferralCodeView(APIView):
 class LogoutProfileView(APIView):
     """Представление для выхода из профиля"""
     permission_classes = [IsAuthenticated]
+    renderer_classes = [TemplateHTMLRenderer]
 
     def get(self, request):
         logout(request)
         request.session.flush()
-        response = redirect("users:verify-code")
+        response = redirect("users:request-code")
         return response

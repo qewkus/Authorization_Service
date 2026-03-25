@@ -23,7 +23,6 @@ INSTALLED_APPS = [
 
     "rest_framework",
     "drf_yasg",
-    "rest_framework_simplejwt",
 
     "users",
 ]
@@ -100,12 +99,17 @@ MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
 AUTH_USER_MODEL = "users.CustomUser"
 
-SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
-}
-
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.SessionAuthentication',
+    ),
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.TemplateHTMLRenderer',
+        'rest_framework.renderers.JSONRenderer',
+    ],
+}
 
 SMSAERO_EMAIL = os.getenv("SMSAERO_EMAIL")
 SMSAERO_API_KEY = os.getenv("SMSAERO_API_KEY")
