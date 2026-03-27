@@ -1,15 +1,19 @@
-from smsaero import SmsAero
-from config.settings import SMSAERO_API_KEY, SMSAERO_EMAIL
 import random
+import time
 from typing import Tuple
+
 from django.conf import settings
 from django.core.cache import cache
+from smsaero import SmsAero
+
+from config.settings import SMSAERO_API_KEY, SMSAERO_EMAIL
+
 from .models import CustomUser
-import time
 
 
 class SMSService:
     """Сервис для работы с SMS"""
+
     @staticmethod
     def generate_code() -> str:
         """Генерация 4-значного кода подтверждения"""
@@ -44,7 +48,7 @@ class SMSService:
             phone_number_int = int(phone_number)
             api = SmsAero(SMSAERO_EMAIL, SMSAERO_API_KEY)
             result = api.send_sms(phone_number_int, f"Ваш код подтверждения: {code}")
-            return bool(result.get('success'))
+            return bool(result.get("success"))
         except Exception as e:
             print(f"Error sending SMS: {e}")
             return False
@@ -57,10 +61,7 @@ class AuthService:
     def get_or_create_user(phone_number: str) -> Tuple[CustomUser, bool]:
         """Получение или создание пользователя по номеру телефона"""
         return CustomUser.objects.get_or_create(
-            phone_number=phone_number,
-            defaults={
-                'is_active': True
-            }
+            phone_number=phone_number, defaults={"is_active": True}
         )
 
     @classmethod

@@ -20,7 +20,11 @@ class Command(BaseCommand):
         password = options["password"]
 
         # Проверка номера телефона
-        if not phone_number.startswith("+") or not phone_number[1:].isdigit() or len(phone_number) < 10:
+        if (
+            not phone_number.startswith("+")
+            or not phone_number[1:].isdigit()
+            or len(phone_number) < 10
+        ):
             self.stdout.write(self.style.ERROR("Некорректный формат номера телефона."))
             return
 
@@ -32,7 +36,9 @@ class Command(BaseCommand):
         try:
             if CustomUser.objects.filter(phone_number=phone_number).exists():
                 self.stdout.write(
-                    self.style.WARNING(f"Пользователь с номером {phone_number} уже существует.")
+                    self.style.WARNING(
+                        f"Пользователь с номером {phone_number} уже существует."
+                    )
                 )
                 return
 
@@ -44,7 +50,9 @@ class Command(BaseCommand):
             user.save()
 
             self.stdout.write(
-                self.style.SUCCESS(f"Суперпользователь с email:{phone_number} успешно создан!")
+                self.style.SUCCESS(
+                    f"Суперпользователь с email:{phone_number} успешно создан!"
+                )
             )
         except ValidationError as e:
             self.stderr.write(
