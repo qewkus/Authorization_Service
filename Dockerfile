@@ -18,7 +18,7 @@ RUN apt-get update \
 COPY requirements.txt .
 
 # Устанавливаем зависимости Python
-RUN pip install --no-cache-dir -r requirements
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Копируем проект
 COPY . .
@@ -30,4 +30,4 @@ EXPOSE 8000
 RUN mkdir -p /app/staticfiles && chmod -R 755 /app/staticfiles
 
 # Команда для запуска
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+# CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
