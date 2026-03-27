@@ -49,6 +49,7 @@ class RequestCodeView(APIView):
 
 
 class VerifyCodeView(APIView):
+    """Представление для верификации кода"""
     renderer_classes = [TemplateHTMLRenderer]
     template_name = "users/verify_code.html"
 
