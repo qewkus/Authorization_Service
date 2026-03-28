@@ -1,0 +1,190 @@
+{% extends 'users/base.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-white py-3">
+            <h4 class="text-center mb-0">Профиль пользователя</h4>
+        </div>
+        <div class="card-body p-4">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5 class="mb-4">Личная информация</h5>
+
+                    <div class="mb-4">
+                        <label class="form-label">Номер телефона</label>
+                        <div class="bg-light rounded p-3">
+                            <span class="fs-5">{{ user.phone_number }}</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label">Ваш инвайт-код</label>
+                        <div class="d-flex align-items-center bg-light rounded p-3">
+                            <div class="font-monospace fs-5 me-3">{{ user.invite_code }}</div>
+                            <button class="btn btn-primary btn-copy ms-auto">
+                                <i class="bi bi-clipboard"></i>
+                            </button>
+                        </div>
+                        <small class="text-muted">Нажмите кнопку, чтобы скопировать код</small>
+                    </div>
+
+                    {% if user.referral_code %}
+                        <div class="mb-4">
+                            <label class="form-label">Активированный реферальный код</label>
+                            <div class="bg-light rounded p-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="font-monospace fs-5">{{ user.referral_code }}</div>
+                                    <i class="bi bi-check-circle-fill text-success ms-2"></i>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    {% if not user.referral_code %}
+                        <div class="mt-4">
+                            <a href="{% url 'users:activate-referral' %}"
+                               class="btn btn-primary w-100 py-2">
+                                Активировать инвайт-код
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="col-md-6">
+                    <h5 class="mb-4">Статистика рефералов</h5>
+
+                    <div class="bg-primary bg-opacity-10 rounded p-4 mb-4">
+                        <div class="d-flex align-items-center">
+                            <div>
+                                <div class="text-primary mb-1">Всего рефералов</div>
+                                <h3 class="mb-0">{{ referred_users|length }}</h3>
+                            </div>
+                            <i class="bi bi-people fs-1 ms-auto text-primary opacity-50"></i>
+                        </div>
+                    </div>
+
+                    {% if referred_users %}
+                        <div class="mb-2">Список рефералов:</div>
+                        <div class="list-group">
+                            {% for phone in referred_users %}
+                                <div class="list-group-item bg-light border-0 rounded mb-2">
+                                    {{ phone }}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted py-4">
+                            <p class="mb-0">У вас пока нет рефералов</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="copy-feedback" id="copyFeedback">
+    <i class="bi bi-check2 me-2"></i>Скопировано
+</div>
+
+<style>
+.card {
+    border: none;
+    border-radius: 12px;
+}
+.btn {
+    font-size: 1rem;
+    padding: 0.5rem 1rem;
+    transition: all 0.3s ease;
+}
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+.btn-copy {
+    padding: 8px;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+}
+.btn-copy i {
+    font-size: 1.2rem;
+}
+.btn-copy:active {
+    transform: scale(0.95);
+}
+.font-monospace {
+    letter-spacing: 1px;
+}
+.list-group-item {
+    transition: background-color 0.2s ease;
+}
+.list-group-item:hover {
+    background-color: #e9ecef !important;
+}
+.bg-primary.bg-opacity-10 {
+    background-color: rgba(13, 110, 253, 0.1) !important;
+}
+.copy-feedback {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(25, 135, 84, 0.15);
+    color: #198754;
+    padding: 12px 20px;
+    border-radius: 8px;
+    border: 1px solid rgba(25, 135, 84, 0.2);
+    display: none;
+    animation: fadeIn 0.3s ease;
+    z-index: 1050;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -60%);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const copyButtons = document.querySelectorAll('.btn-copy');
+
+    copyButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const textToCopy = this.closest('.d-flex').querySelector('.font-monospace').textContent;
+
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                const icon = this.querySelector('i');
+                const feedback = document.getElementById('copyFeedback');
+
+                icon.classList.replace('bi-clipboard', 'bi-check2');
+                this.classList.replace('btn-primary', 'btn-success');
+
+                feedback.style.display = 'block';
+
+                setTimeout(() => {
+                    icon.classList.replace('bi-check2', 'bi-clipboard');
+                    this.classList.replace('btn-success', 'btn-primary');
+                    feedback.style.display = 'none';
+                }, 2000);
+            }).catch(err => {
+                console.error('Ошибка при копировании:', err);
+            });
+        });
+    });
+});
+</script>
+{% endblock %}
