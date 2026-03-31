@@ -4,7 +4,14 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-load_dotenv(override=True)
+IS_DOCKER = os.getenv('DOCKER_ENV', False)
+
+if IS_DOCKER:
+    env_file = '.env.docker'
+else:
+    env_file = '.env'
+
+load_dotenv(env_file, override=True)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
